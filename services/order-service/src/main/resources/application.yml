@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: order-service
+
+server:
+  port: 8081
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+
+logging:
+  level:
+    root: INFO
+  pattern:
+    console: '{"timestamp":"%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX}","level":"%p","service":"order-service","trace":"%X{traceId:-}","span":"%X{spanId:-}","thread":"%t","logger":"%c{1.}","message":"%m"}%n'
