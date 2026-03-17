@@ -1,48 +1,49 @@
 # incident-intelligence
 AI-Driven Incident Intelligence Platform
 
-## 1) Target architecture (event-driven + AI)
-This repository now includes a Kafka-first microservice flow for incident intelligence:
+This project is a Kafka-driven microservice pipeline for incident detection and response.
 
-1. **log-ingestion-service** accepts structured logs over HTTP and pushes them to `logs.raw`.
-2. **anomaly-detection-service** consumes `logs.raw`, scores anomaly risk, and emits events to `incidents.anomalies`.
-3. **incident-classification-service** consumes anomalies, classifies incidents, and produces RAG-style summaries + root-cause hints to `incidents.classified`.
-4. **remediation-suggestion-service** consumes classified incidents and generates remediation playbook steps that can be fetched over HTTP.
+## Architecture (implemented)
 
-```text
-App/Infra Logs --> log-ingestion-service --> [Kafka: logs.raw]
-                                        --> anomaly-detection-service --> [Kafka: incidents.anomalies]
-                                        --> incident-classification-service --> [Kafka: incidents.classified]
-                                        --> remediation-suggestion-service --> API /api/remediations/latest
-```
-
----
-
-## 2) Project structure
-- `services/log-ingestion-service` – REST log intake + Kafka producer
-- `services/anomaly-detection-service` – Kafka consumer + anomaly scorer + producer
-- `services/incident-classification-service` – Kafka consumer + incident classification + RAG-style summarizer
-- `services/remediation-suggestion-service` – Kafka consumer + remediation recommendation API
-- `infra/docker/docker-compose.yml` – local infrastructure and service orchestration
+1. **log-ingestion-service** (`:8084`)
+   - Receives log events over REST (`POST /api/logs`)
+   - Publishes to Kafka topic `logs.raw`
+2. **anomaly-detection-service** (`:8085`)
+   - Consumes `logs.raw`
+   - Calculates an anomaly score
+   - Publishes anomalies to `incidents.anomalies`
+3. **incident-classification-service** (`:8086`)
+   - Consumes `incidents.anomalies`
+   - Classifies category + severity
+   - Produces RAG-style summary/root-cause hints to `incidents.classified`
+4. **remediation-suggestion-service** (`:8087`)
+   - Consumes `incidents.classified`
+   - Generates remediation playbook steps
+   - Exposes latest recommendation at `GET /api/remediations/latest`
 
 ---
 
-## 3) Step-by-step build and run
+## How to run (quick start)
 
-### Step 1: Start infrastructure + services
-From repository root:
+### Prerequisites
+- Docker + Docker Compose installed
+
+### 1) Start everything
+From repo root:
 
 ```bash
 cd infra/docker
 docker compose up --build
 ```
 
-Services exposed locally:
-- Kafka: `localhost:9092`
-- Log ingestion API: `localhost:8084`
-- Remediation API: `localhost:8087`
+This starts:
+- Zookeeper
+- Kafka
+- Postgres
+- all 4 incident-intelligence services
 
-### Step 2: Send sample logs to ingestion service
+### 2) Send a sample incident log
+In a new terminal:
 
 ```bash
 curl -X POST http://localhost:8084/api/logs \
@@ -60,46 +61,81 @@ curl -X POST http://localhost:8084/api/logs \
   }'
 ```
 
-### Step 3: Read generated remediation
+Expected response: `202 Accepted`
+
+### 3) Fetch the generated remediation recommendation
+Wait ~2–5 seconds, then run:
 
 ```bash
 curl http://localhost:8087/api/remediations/latest
 ```
 
----
+Expected response: JSON with:
+- `incidentId`
+- `severity`
+- `recommendationSummary`
+- `playbookSteps`
+- `generatedAt`
 
-## 4) How AI/RAG is wired (initial baseline)
-The classification service includes an initial **RAG-style summarization stub**:
-- Retrieves context by category inference from anomaly text.
-- Generates incident summary + probable root cause for downstream remediation.
+### 4) Stop the stack
 
-### Next upgrade path (recommended)
-1. Add a **vector store** (pgvector, Elasticsearch, or OpenSearch).
-2. Store runbooks/postmortems/SOP docs as embeddings.
-3. Replace rule-based `summarize(...)` with actual LLM call through Spring AI.
-4. Add confidence scoring and human-in-the-loop approval before automated actions.
+```bash
+cd infra/docker
+docker compose down
+```
 
----
-
-## 5) Suggested implementation roadmap
-1. **Foundation**: run Kafka + all four services (done in this scaffold).
-2. **Detection quality**: improve anomaly scoring with historical baselines.
-3. **Classification quality**: train or prompt-tune category/severity detection.
-4. **RAG integration**: attach real knowledge base and LLM service.
-5. **Automation guardrails**: approval workflows, rollback hooks, and audit trails.
-6. **Observability**: tracing, DLQs, retries, and SLA dashboards.
+(Use `docker compose down -v` to also delete database volumes.)
 
 ---
 
-## 6) Topics and contracts
-- `logs.raw`: input log events
-- `incidents.anomalies`: anomaly events
-- `incidents.classified`: classified incident events with summaries/root-cause hints
+## One-command demo script
 
-JSON contracts are defined as Java records in each service's `domain/` package.
+You can run this helper script after the stack is up:
+
+```bash
+./scripts/demo.sh
+```
+
+It posts a sample log event, waits a few seconds, then fetches the latest remediation.
 
 ---
 
-## 7) Notes
-- This is a production-oriented starter scaffold to help you move quickly.
-- You can now iteratively enhance each microservice without changing the end-to-end event topology.
+## Notes about Kafka networking
+
+Compose is configured with:
+- internal broker listener for containers: `kafka:29092`
+- host listener for local tools: `localhost:9092`
+
+So:
+- services in Docker use `KAFKA_BOOTSTRAP_SERVERS=kafka:29092`
+- your laptop CLI/tools can use `localhost:9092`
+
+---
+
+## Troubleshooting
+
+### `docker compose up --build` fails on image builds
+- verify Docker daemon is running
+- check internet access for Maven dependency downloads
+- retry build: `docker compose build --no-cache`
+
+### `GET /api/remediations/latest` returns 204
+This means no incident has flowed through yet. Make sure:
+1. you sent the sample log payload,
+2. the log has strong anomaly indicators (`level=ERROR`, includes timeout/failed/database/etc.),
+3. services are healthy (`docker compose logs -f`)
+
+### Inspect service logs
+
+```bash
+cd infra/docker
+docker compose logs -f log-ingestion-service anomaly-detection-service incident-classification-service remediation-suggestion-service
+```
+
+---
+
+## Next improvements
+- Replace rule-based anomaly scoring with model-driven detection.
+- Replace summary stub with true RAG + LLM (Spring AI + vector DB).
+- Add persistence for incidents/recommendations.
+- Add retries, dead-letter topics, and observability dashboards.
