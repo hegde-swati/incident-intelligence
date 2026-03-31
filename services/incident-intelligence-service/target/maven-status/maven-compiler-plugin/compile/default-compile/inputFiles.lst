@@ -1,0 +1,11 @@
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\application\IncidentIntelligenceApplicationService.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\application\DashboardApplicationService.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\config\WebCorsConfig.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\domain\AIAnalyzeRequest.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\domain\AIAnalyzeResponse.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\domain\ServiceLogEntry.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\domain\ServiceSummary.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\dashboard\web\DashboardController.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\domain\IncidentIntelligenceResponse.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\IncidentIntelligenceServiceApplication.java
+S:\AIIDP\incident-intelligence\services\incident-intelligence-service\src\main\java\com\incidentintelligence\incidentintelligence\web\IncidentIntelligenceController.java
