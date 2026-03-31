@@ -17,10 +17,4 @@ Standalone React + TypeScript dashboard for Incident Intelligence.
    npm start
    ```
 
-## Build for production
-
-```bash
-npm run build
-```
-
-The app runs independently and expects backend APIs at `VITE_API_BASE_URL`.
+The app runs independently and expects backend APIs at `REACT_APP_API_BASE_URL`.
