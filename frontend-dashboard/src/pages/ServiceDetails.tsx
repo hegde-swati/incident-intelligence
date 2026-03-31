@@ -2,7 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import AIAnalysisPanel from '../components/AIAnalysisPanel';
 import LogsViewer from '../components/LogsViewer';
-import { ServiceLog, fetchServiceLogs } from '../services/api';
+import { ServiceLog, serviceLogStreamUrl } from '../services/api';
+
+const MAX_LOGS = 500;
 
 const ServiceDetails: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -17,19 +19,30 @@ const ServiceDetails: React.FC = () => {
       return;
     }
 
-    const loadLogs = async () => {
-      try {
-        const data = await fetchServiceLogs(id);
-        setLogs(data);
-        setError(null);
-      } catch {
-        setError('Could not load logs for this service.');
-      } finally {
-        setLoading(false);
-      }
+    setLogs([]);
+    setLoading(true);
+    setError(null);
+
+    const stream = new EventSource(serviceLogStreamUrl(id));
+
+    stream.addEventListener('log', (event) => {
+      const nextLog = JSON.parse((event as MessageEvent).data) as ServiceLog;
+      setLogs((current) => {
+        const updated = [...current, nextLog];
+        return updated.length > MAX_LOGS ? updated.slice(updated.length - MAX_LOGS) : updated;
+      });
+      setLoading(false);
+    });
+
+    stream.onerror = () => {
+      setError('Live log stream disconnected. Please refresh and try again.');
+      setLoading(false);
+      stream.close();
     };
 
-    loadLogs();
+    return () => {
+      stream.close();
+    };
   }, [id]);
 
   return (
@@ -46,7 +59,7 @@ const ServiceDetails: React.FC = () => {
 
         {error && <p className="mt-6 rounded-lg bg-rose-500/10 p-4 text-rose-300">{error}</p>}
 
-        {!loading && !error && id && (
+        {!error && id && (
           <div className="mt-6 grid grid-cols-1 gap-6 lg:grid-cols-3">
             <section className="lg:col-span-2">
               <h2 className="mb-3 text-lg font-semibold text-slate-200">Service Logs</h2>
