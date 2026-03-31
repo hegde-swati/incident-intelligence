@@ -39,6 +39,11 @@ export const fetchServiceLogs = async (serviceId: string): Promise<ServiceLog[]>
   return data;
 };
 
+export const serviceLogStreamUrl = (serviceId: string): string => {
+  const baseUrl = process.env.REACT_APP_API_BASE_URL || 'http://localhost:8085';
+  return `${baseUrl}/api/services/${serviceId}/logs/stream`;
+};
+
 export const analyzeLogs = async (
   serviceId: string,
   logs: ServiceLog[]
